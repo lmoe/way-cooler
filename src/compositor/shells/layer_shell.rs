@@ -1,3 +1,4 @@
+use compositor::Server;
 use wlroots::{CompositorHandle, SurfaceHandle, LayerShellHandler, LayerSurfaceHandle,
               OutputHandle, LayerShellManagerHandler };
 
@@ -34,11 +35,17 @@ pub struct LayerShellManager;
 
 impl LayerShellManagerHandler for LayerShellManager {
     fn new_surface(&mut self,
-                   _: CompositorHandle,
+                   compositor: CompositorHandle,
                    _: LayerSurfaceHandle,
                    output: &mut Option<OutputHandle>)
                    -> Option<Box<LayerShellHandler>> {
         wlr_log!(L_ERROR, "Output was {:?}", output);
+        if output.is_none() {
+            with_handles!([(compositor: {compositor})] => {
+                let server: &mut Server = compositor.into();
+                *output = server.outputs.first().cloned();
+            }).unwrap();
+        }
         Some(Box::new(LayerShell::new()))
     }
 }

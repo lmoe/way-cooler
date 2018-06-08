@@ -69,14 +69,16 @@ compositor_data!(Server);
 pub fn init() -> Compositor {
     let layout = OutputLayout::create(Box::new(OutputLayoutManager::new()));
     let cursor = Cursor::create(Box::new(CursorManager::new()));
-    let mut compositor = CompositorBuilder::new().gles2(true)
-                                                 .data_device(true)
-                                                 .output_manager(Box::new(OutputManager::new()))
-                                                 .input_manager(Box::new(InputManager::new()))
-                                                 .xwayland(Box::new(XWaylandManager::new()))
-                                                 .xdg_shell_v6_manager(Box::new(XdgV6ShellManager))
-                                                 .custom_terminate(|| ::awesome::lua::terminate())
-                                                 .build_auto(Server::new(layout, cursor));
+    let mut compositor = CompositorBuilder::new()
+        .gles2(true)
+        .data_device(true)
+        .output_manager(Box::new(OutputManager::new()))
+        .input_manager(Box::new(InputManager::new()))
+        .xwayland(Box::new(XWaylandManager::new()))
+        .layer_shell_manager(Box::new(LayerShellManager))
+        .xdg_shell_v6_manager(Box::new(XdgV6ShellManager))
+        .custom_terminate(|| ::awesome::lua::terminate())
+        .build_auto(Server::new(layout, cursor));
     // NOTE We need to create this afterwards because it needs the compositor
     // running to announce the seat.
     let seat = wlroots::Seat::create(&mut compositor,

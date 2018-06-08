@@ -52,6 +52,7 @@ impl InputManagerHandler for InputManager {
         Some(Box::new(compositor::Pointer))
     }
 
+    /*
     fn keyboard_removed(&mut self, compositor: CompositorHandle, keyboard: KeyboardHandle) {
         with_handles!([(compositor: {compositor}), (keyboard: {keyboard})] => {
             let server: &mut Server = compositor.into();
@@ -90,4 +91,5 @@ impl InputManagerHandler for InputManager {
             }).expect("Cursor was destroyed");
         }).unwrap();
     }
+    */
 }

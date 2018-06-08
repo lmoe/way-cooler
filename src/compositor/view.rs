@@ -21,6 +21,11 @@ impl View {
                 with_handles!([(xdg_surface: {xdg_surface})] => {
                     xdg_surface.surface()
                 }).unwrap()
+            },
+            Shell::Layer(ref layer_surface) => {
+                with_handles!([(layer_surface: {layer_surface})] => {
+                    layer_surface.surface()
+                }).unwrap()
             }
         }
     }
@@ -36,6 +41,9 @@ impl View {
                         _ => unimplemented!()
                     }
                 }).unwrap();
+            },
+            Shell::Layer(ref layer_surface) => {
+                // TODO How do we "activate" a layer shell surface
             }
         }
     }
@@ -45,6 +53,11 @@ impl View {
             Shell::XdgV6(ref xdg_surface) => {
                 with_handles!([(xdg_surface: {xdg_surface})] => {
                     xdg_surface.for_each_surface(f);
+                }).unwrap();
+            },
+            Shell::Layer(ref layer_surface) => {
+                with_handles!([(layer_surface: {layer_surface})] => {
+                    layer_surface.for_each_surface(f);
                 }).unwrap();
             }
         }

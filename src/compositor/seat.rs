@@ -99,20 +99,34 @@ impl Seat {
     pub fn view_at_pointer(views: &mut [Rc<View>],
                            cursor: &mut Cursor)
                            -> (Option<Rc<View>>, Option<SurfaceHandle>, f64, f64) {
+        let (lx, ly) = cursor.coords();
         for view in views {
-            match view.shell {
+            let (mut sx, mut sy) = (0.0, 0.0);
+            let surface = match view.shell {
                 Shell::XdgV6(ref shell) => {
-                    let (mut sx, mut sy) = (0.0, 0.0);
-                    let surface = with_handles!([(shell: {shell})] => {
-                        let (lx, ly) = cursor.coords();
+                    with_handles!([(shell: {shell})] => {
                         let Origin {x: shell_x, y: shell_y} = view.origin.get();
                         let (view_sx, view_sy) = (lx - shell_x as f64, ly - shell_y as f64);
                         shell.surface_at(view_sx, view_sy, &mut sx, &mut sy)
-                    }).unwrap();
-                    if surface.is_some() {
-                        return (Some(view.clone()), surface, sx, sy)
-                    }
+                    }).unwrap()
+                },
+                Shell::Layer(ref shell) => {
+                    with_handles!([(shell: {shell})] => {
+                        let Origin {x: shell_x, y: shell_y} = view.origin.get();
+                        let (view_sx, view_sy) = (lx - shell_x as f64, ly - shell_y as f64);
+                        // TODO Make this like the thing above by patching wlroots-rs
+                        if let Some(res) = shell.surface_at(view_sx, view_sy) {
+                            sx = res.1;
+                            sy = res.2;
+                            Some(res.0)
+                        } else {
+                            None
+                        }
+                    }).unwrap()
                 }
+            };
+            if surface.is_some() {
+                return (Some(view.clone()), surface, sx, sy)
             }
         }
         (None, None, 0.0, 0.0)

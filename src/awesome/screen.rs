@@ -4,7 +4,7 @@ use awesome::{class::{self, Class, ClassBuilder}, object::{self, Object, Objecta
               property::Property};
 use rlua::{self, AnyUserData, Lua, MetaMethod, Table, ToLua, UserData, UserDataMethods, Value};
 use std::fmt::{self, Display, Formatter};
-use wlroots::{Area, Origin, OutputHandle, Size};
+use wlroots::{Area, Origin, OutputHandle, Size, compositor_handle};
 
 use compositor::Server;
 
@@ -97,6 +97,19 @@ impl<'lua> Screen<'lua> {
         table.set("height", height)?;
         Ok(table)
     }
+
+    fn get_index(&self, _: &'lua Lua) -> rlua::Result<usize> {
+        let state = self.state()?;
+        Ok(with_handles!([(compositor: {compositor_handle().unwrap()})] => {
+            let server: &mut Server = compositor.into();
+            for (index, output) in server.outputs.iter().enumerate() {
+                if *output == state.output {
+                    return index
+                }
+            }
+            0
+        }).unwrap())
+    }
 }
 
 pub fn init<'lua>(lua: &'lua Lua, server: &mut Server) -> rlua::Result<Class<'lua>> {
@@ -147,6 +160,10 @@ fn property_setup<'lua>(lua: &'lua Lua,
            .property(Property::new("workarea".into(),
                                    None,
                                    Some(lua.create_function(get_workarea)?),
+                                   None))?
+           .property(Property::new("index".into(),
+                                   None,
+                                   Some(lua.create_function(get_index)?),
                                    None))
 }
 
@@ -158,6 +175,11 @@ fn get_geometry<'lua>(lua: &'lua Lua, object: AnyUserData<'lua>) -> rlua::Result
 fn get_workarea<'lua>(lua: &'lua Lua, object: AnyUserData<'lua>) -> rlua::Result<Table<'lua>> {
     let screen = Screen::cast(object.into())?;
     screen.get_workarea(lua)
+}
+
+fn get_index<'lua>(lua: &'lua Lua, object: AnyUserData<'lua>) -> rlua::Result<usize> {
+    let screen = Screen::cast(object.into())?;
+    screen.get_index(lua)
 }
 
 fn count<'lua>(lua: &'lua Lua, _: ()) -> rlua::Result<Value<'lua>> {

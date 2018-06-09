@@ -66,7 +66,19 @@ pub fn init(lua: &Lua, server: &mut Server) -> rlua::Result<()> {
     drawin::init(lua)?;
     drawable::init(lua)?;
     mousegrabber::init(lua)?;
+
+    // exprot string.wlen
+    let globals = lua.globals();
+    let string_table = globals.get::<_, Table>("string")?;
+    string_table.set("wlen", lua.create_function(str_len)?)?;
     Ok(())
+}
+
+/// UTF-8 aware string length computing.
+///
+/// Fun fact, Rust makes this real easy ;)
+fn str_len(_: &Lua, string: String) -> rlua::Result<usize> {
+    Ok(string.len())
 }
 
 fn setup_awesome_path(lua: &Lua) -> rlua::Result<()> {

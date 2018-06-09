@@ -1,12 +1,13 @@
 //! TODO Fill in
 
-use rlua::{self, AnyUserData, Lua, MetaMethod, Table, UserData, UserDataMethods, Value};
+use rlua::{self, AnyUserData, Lua, MetaMethod, Table, UserData, UserDataMethods, Value, ToLua};
 use wlroots;
 
 use std::default::Default;
 use std::fmt::{self, Display, Formatter};
 
 use compositor::Server;
+use awesome::screen::SCREENS_HANDLE;
 
 const INDEX_MISS_FUNCTION: &'static str = "__index_miss_function";
 const NEWINDEX_MISS_FUNCTION: &'static str = "__newindex_miss_function";
@@ -97,7 +98,7 @@ fn set_newindex_miss(lua: &Lua, func: rlua::Function) -> rlua::Result<()> {
     table.set(NEWINDEX_MISS_FUNCTION, func)
 }
 
-fn index<'lua>(_: &'lua Lua,
+fn index<'lua>(lua: &'lua Lua,
                (mouse, index): (AnyUserData<'lua>, Value<'lua>))
                -> rlua::Result<Value<'lua>> {
     let obj_table = mouse.get_user_value::<Table>()?;
@@ -111,10 +112,12 @@ fn index<'lua>(_: &'lua Lua,
             // TODO Might need a more robust way to get the current output...
             // E.g they look at where the cursor is, I don't think we need to do that.
 
-            with_handles!([(compositor: {wlroots::compositor_handle().unwrap()})] => {
+            // TODO FIXME Actually returned the "focused" output.
+            // We need to define that in the compositor.
+            let screens = lua.named_registry_value::<Vec<AnyUserData>>(SCREENS_HANDLE)?;
+            return screens[0].clone().to_lua(lua)
+            /*with_handles!([(compositor: {wlroots::compositor_handle().unwrap()})] => {
                 let server: &mut Server = compositor.into();
-                // TODO FIXME Actually returned the "focused" output.
-                // We need to define that in the compositor.
                 server.outputs[0].clone()
                 //use super::screen::SCREENS_HANDLE;
                 //let index = outputs.iter()
@@ -128,7 +131,7 @@ fn index<'lua>(_: &'lua Lua,
                 // TODO Return screen even in bad case,
                 // see how awesome does it for maximal compatibility
                 //panic!("Could not find a screen")
-            }).expect("Could not lock compositor");
+            }).expect("Could not lock compositor");*/
         }
         _ => {}
     }

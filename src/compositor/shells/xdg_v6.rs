@@ -58,11 +58,15 @@ impl XdgV6ShellHandler for XdgV6 {
             let server: &mut Server = compositor.into();
             let Server { ref mut seat,
                          ref mut views,
+                         ref mut focused_output,
                          ref mut cursor,
                          ref mut xcursor_manager,
                          .. } = *server;
-            if is_toplevel {
-                let view = Rc::new(View::new(Shell::XdgV6(shell_surface.into())));
+            if is_toplevel && focused_output.is_some() {
+                // TODO Shouldn't this be stored in the shell, not the view?
+                // Otherwise it won't decide the output until it's mapped.
+                let output = focused_output.clone().unwrap();
+                let view = Rc::new(View::new(Shell::XdgV6(shell_surface.into()), output));
                 views.push(view.clone());
                 seat.focus_view(view, views);
             }

@@ -1,17 +1,22 @@
 use compositor::Shell;
 use std::cell::Cell;
 use wlroots::XdgV6ShellState::*;
-use wlroots::{Origin, SurfaceHandle};
+use wlroots::{Origin, SurfaceHandle, OutputHandle};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct View {
     pub shell: Shell,
+    pub output: OutputHandle,
     pub origin: Cell<Origin>
 }
 
+// NOTE Needed for it to be accessed by Lua. Is probably not kosher.
+unsafe impl Send for View {}
+
 impl View {
-    pub fn new(shell: Shell) -> View {
+    pub fn new(shell: Shell, output: OutputHandle) -> View {
         View { shell: shell,
+               output,
                origin: Cell::new(Origin::default()) }
     }
 

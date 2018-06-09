@@ -28,6 +28,7 @@ pub struct Server {
     pub keyboards: Vec<KeyboardHandle>,
     pub pointers: Vec<PointerHandle>,
     pub outputs: Vec<OutputHandle>,
+    pub focused_output: Option<OutputHandle>,
     pub views: Vec<Rc<View>>
 }
 
@@ -40,6 +41,7 @@ impl Default for Server {
         Server { xcursor_manager,
                  layout: OutputLayoutHandle::default(),
                  seat: Seat::default(),
+                 focused_output: None,
                  cursor: CursorHandle::default(),
                  keyboards: Vec::default(),
                  pointers: Vec::default(),

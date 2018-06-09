@@ -81,6 +81,11 @@ impl<'lua> Screen<'lua> {
         Ok(())
     }
 
+    pub fn screen(&self) -> rlua::Result<OutputHandle> {
+        let state = self.state()?;
+        Ok(state.outputs[0].clone())
+    }
+
     fn get_geometry(&self, lua: &'lua Lua) -> rlua::Result<Table<'lua>> {
         let state = self.state()?;
         let Origin { x, y } = state.geometry.origin;

@@ -16,12 +16,16 @@ impl OutputManagerHandler for OutputManager {
                              -> Option<OutputBuilderResult<'output>> {
         with_handles!([(compositor: {compositor})] => {
             let server: &mut Server = compositor.into();
-            let mut res = builder.build_best_mode(Output);
-            server.outputs.push(res.output.clone());
             let Server { ref mut cursor,
                          ref mut layout,
+                         ref mut focused_output,
                          ref mut xcursor_manager,
                          .. } = *server;
+            let mut res = builder.build_best_mode(Output);
+            server.outputs.push(res.output.clone());
+            if focused_output.is_none() {
+                *focused_output = Some(res.output.clone());
+            }
             with_handles!([(layout: {layout}),
                            (cursor: {cursor}),
                            (output: {&mut res.output})] => {

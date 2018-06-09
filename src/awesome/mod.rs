@@ -26,13 +26,24 @@ mod xproperty;
 
 pub use self::lua::{NEXT_LUA, LUA};
 
-pub use self::drawin::{Drawin, DRAWINS_HANDLE};
-pub use self::key::Key;
-pub use self::keygrabber::keygrabber_handle;
-pub use self::mousegrabber::mousegrabber_handle;
-pub use self::object::{Object, Objectable};
-pub use self::root::ROOT_KEYS_HANDLE;
+pub use self::awesome::*;
+pub use self::button::*;
+pub use self::class::*;
+pub use self::client::*;
+pub use self::drawable::*;
+pub use self::drawin::*;
+pub use self::key::*;
+pub use self::keygrabber::*;
+pub use self::lua::*;
+pub use self::mouse::*;
+pub use self::mousegrabber::*;
+pub use self::object::*;
+pub use self::property::*;
+pub use self::root::*;
+pub use self::screen::*;
 pub use self::signal::*;
+pub use self::tag::*;
+pub use self::xproperty::*;
 
 use compositor::Server;
 

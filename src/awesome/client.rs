@@ -1,7 +1,8 @@
 use std::fmt::{self, Display, Formatter};
+use std::rc::Rc;
 
 use wlroots;
-use rlua::{self, Lua, ToLua, UserData, Value};
+use rlua::{self, Lua, ToLua, UserData, Value, AnyUserData};
 
 use super::class::{self, Class, ClassBuilder};
 use super::Screen;
@@ -25,6 +26,11 @@ impl <'lua> Client<'lua> {
             state.view = Some(view);
         }
         Ok(client.0)
+    }
+
+    pub fn view(&self) -> rlua::Result<Option<View>> {
+        let client = self.state()?;
+        Ok(client.view.clone())
     }
 }
 
@@ -53,7 +59,9 @@ fn method_setup<'lua>(lua: &'lua Lua,
     // TODO Do properly
     use super::dummy;
     builder.method("connect_signal".into(), lua.create_function(dummy)?)?
-           .method("get".into(), lua.create_function(get_client)?)
+           .method("get".into(), lua.create_function(get_client)?)?
+           .method("__index".into(), lua.create_function(index)?)?
+           .method("__newindex".into(), lua.create_function(newindex)?)
 }
 
 impl_objectable!(Client, ClientState);
@@ -101,4 +109,61 @@ fn get_client<'lua>(lua: &'lua Lua, (screen, stacked): (rlua::Value, rlua::Value
         }
         lua.create_table()?.to_lua(lua)
     }).unwrap()
+}
+
+
+fn index<'lua>(lua: &'lua Lua,
+               (data, index): (AnyUserData<'lua>, Value<'lua>))
+               -> rlua::Result<Value<'lua>> {
+    let obj: Object = data.clone().into();
+    match index {
+        Value::String(ref string) => {
+            let string = string.to_str()?;
+            if string == "focus" {
+                return with_handles!([(compositor: {wlroots::compositor_handle().unwrap()})] => {
+                    let server: &mut Server = compositor.into();
+                    warn!("I GOT MAH FOCUS");
+                    if let Some(focused) = server.seat.focused.as_ref() {
+                        Client::new(lua, (**focused).clone())?.to_lua(lua)
+                    } else {
+                        Ok(rlua::Value::Nil)
+                    }
+                }).unwrap()
+            }
+        },
+        _ => {}
+    }
+
+    let table = obj.table()?;
+    let meta = table.get_metatable().expect("Client had no metatable");
+    match meta.get(index.clone()) {
+        Err(_) | Ok(Value::Nil) => super::object::default_index(lua, (data, index)),
+        Ok(value) => Ok(value)
+    }
+}
+
+fn newindex<'lua>(_: &'lua Lua,
+                  (_, index, val): (AnyUserData<'lua>, Value, Value<'lua>))
+                  -> rlua::Result<Value<'lua>> {
+    match index {
+        Value::String(ref string) => {
+            let string = string.to_str()?;
+            if string == "focus" {
+                with_handles!([(compositor: {wlroots::compositor_handle().unwrap()})] => {
+                    let server: &mut Server = compositor.into();
+                    match val {
+                        Value::UserData(client) => {
+                            warn!("ay");
+                            let client = Client::cast(client.into())?;
+                            server.seat.focused = client.view()?.map(Rc::new)
+                        },
+                        _ => {}
+                    }
+                    Ok(())
+                }).unwrap()?;
+            }
+        },
+        _ => {}
+    }
+    return Ok(Value::Nil)
 }

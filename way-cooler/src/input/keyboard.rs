@@ -1,6 +1,5 @@
-use rlua::{self, Lua};
 use wlroots::{key_events::KeyEvent, xkbcommon::xkb::{KEY_Escape, KEY_Super_L, KEY_Super_R},
-              Capability, CompositorHandle, KeyboardHandle, KeyboardHandler, KeyboardModifier,
+              Capability, CompositorHandle, KeyboardHandle, KeyboardHandler,
               WLR_KEY_PRESSED};
 
 pub struct Keyboard;

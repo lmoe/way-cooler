@@ -13,6 +13,7 @@ const MOD_NAMES: [&str; 8] = ["Shift", "Caps", "Control", "Alt", "Mod2", "Mod3",
 const MOUSE_EVENTS: [u32; 5] = [BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA];
 
 /// Convert a modifier to the Lua interpretation
+#[allow(non_upper_case_globals)]
 pub fn mods_to_lua<'lua>(lua: &'lua Lua, mods: &[Key]) -> rlua::Result<Table<'lua>> {
     let mut mods_list: Vec<String> = Vec::with_capacity(MOD_NAMES.len());
     for modifier in mods {
@@ -30,6 +31,7 @@ pub fn mods_to_lua<'lua>(lua: &'lua Lua, mods: &[Key]) -> rlua::Result<Table<'lu
 }
 
 /// Convert a modifier list to a single number.
+#[allow(non_upper_case_globals)]
 pub fn mods_to_num(modifiers: Table) -> rlua::Result<KeyboardModifier> {
     let mut res = KeyboardModifier::empty();
     for modifier in mods_to_rust(modifiers)? {

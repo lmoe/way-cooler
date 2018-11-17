@@ -67,7 +67,9 @@ mod root;
 mod lua;
 mod wayland_protocols;
 
-use std::{env, mem, path::PathBuf, process::exit, io::{self, Write}};
+use std::{env, mem, path::PathBuf, process::exit, io::{self, Write},
+          cell::RefCell,
+          os::unix::io::RawFd};
 
 use exec::Command;
 use rlua::{LightUserData, Lua, Table};
@@ -77,6 +79,8 @@ use xcb::{xkb, Connection};
 use wayland_client::{Display, GlobalManager, EventQueue, GlobalError};
 use wayland_client::protocol::{wl_compositor, wl_shm, wl_output, wl_display::RequestsTrait};
 use wayland_client::sys::client::wl_display;
+use glib::IOCondition;
+use glib::source::{PRIORITY_DEFAULT, SourceId, idle_source_new, unix_fd_add};
 
 use self::lua::{LUA, NEXT_LUA};
 use wayland_protocols::xdg_shell::xdg_wm_base;
@@ -86,6 +90,10 @@ const GIT_VERSION: &'static str = include_str!(concat!(env!("OUT_DIR"), "/git-ve
 pub const GLOBAL_SIGNALS: &'static str = "__awesome_global_signals";
 pub const XCB_CONNECTION_HANDLE: &'static str = "__xcb_connection";
 
+thread_local! {
+    static WAYLAND_STATE: RefCell<Option<WaylandState>> = RefCell::new(None);
+}
+
 /// The state passed into C to store it during the glib loop.
 ///
 /// It's passed back to us when Awesome needs a refresh so we can
@@ -93,15 +101,15 @@ pub const XCB_CONNECTION_HANDLE: &'static str = "__xcb_connection";
 #[repr(C)]
 struct WaylandState {
     pub display: Display,
-    pub event_queue: EventQueue
+    pub event_queue: EventQueue,
+    pub wayland_tag: SourceId
 }
 
 /// Called from `wayland_glib_interface.c` after every call back into the
 /// wayland event loop.
 ///
 /// This restarts the Lua thread if there is a new one pending
-#[no_mangle]
-pub extern "C" fn awesome_refresh(wayland_state: *mut libc::c_void) {
+fn awesome_refresh(_wayland_state: &WaylandState) {
     // NOTE
     // This is safe because it's way back up the stack where we can't access it.
     //
@@ -109,7 +117,6 @@ pub extern "C" fn awesome_refresh(wayland_state: *mut libc::c_void) {
     //
     // The only way it's unsafe is if we destructure `WaylandState`,
     // which we can't do because it's borrowed.
-    let _wayland_state = unsafe { &mut *(wayland_state as *mut WaylandState) };
     NEXT_LUA.with(|new_lua_check| {
         if new_lua_check.get() {
             new_lua_check.set(false);
@@ -151,11 +158,12 @@ fn main() {
             .expect("Could not set SIGINT catcher");
     }
     lua::init_awesome_libraries();
-    init_wayland();
+    let (display, event_queue, _globals) = init_wayland();
+    init_glib(display, event_queue);
     lua::run_awesome();
 }
 
-fn init_wayland() {
+fn init_wayland() -> (Display, EventQueue, GlobalManager) {
     let (display, mut event_queue) = match Display::connect_to_env() {
         Ok(res) => res,
         Err(err) => {
@@ -206,19 +214,48 @@ fn init_wayland() {
     };
     wayland_obj::xdg_shell_init(xwm_base_proxy, ());
     event_queue.sync_roundtrip().unwrap();
-    let mut wayland_state = WaylandState { display, event_queue };
-    let display_ptr = wayland_state.display.c_ptr() as *mut wl_display;
-    unsafe {
-        #[link(name = "wayland_glib_interface", kind = "static")]
-        extern "C" {
-            fn wayland_glib_interface_init(display: *mut wl_display,
-                                           wayland_state: *mut libc::c_void);
+    (display, event_queue, globals)
+}
+
+/// Init glib main loop, which is needed by Awesome.
+///
+/// We take ownership of the Wayland `Display` because glib will now own its
+/// file descriptor.
+fn init_glib(display: Display, event_queue: EventQueue) {
+    let display_ptr = display.c_ptr() as *mut wl_display;
+
+    let idle_source = idle_source_new(None,
+                                      PRIORITY_DEFAULT,
+                                      glib_idle);
+    let wayland_fd = unsafe {wayland_sys::client::wl_display_get_fd(display_ptr)};
+    let wayland_tag = unix_fd_add(wayland_fd,
+                                  IOCondition::IN | IOCondition::ERR | IOCondition::HUP,
+                                  wayland_idle);
+    idle_source.attach(None);
+    WAYLAND_STATE.with(|state| {
+        state.replace(Some(WaylandState { display, event_queue, wayland_tag }))
+    });
+}
+
+fn glib_idle() -> glib::source::Continue {
+    glib::source::Continue(WAYLAND_STATE.with(|state| {
+        let mut state = state.borrow_mut();
+        let state = state.as_mut().expect("Wayland state was not initilized");
+        state.display.flush().unwrap() != 0
+    }))
+}
+
+fn wayland_idle(_fd: RawFd, _condition: glib::IOCondition) -> glib::source::Continue {
+    WAYLAND_STATE.with(|state| {
+        let mut state = state.borrow_mut();
+        let state = state.as_mut().expect("Wayland state was not initilized");
+        state.display.flush().unwrap();
+        if state.event_queue.sync_roundtrip().is_err() {
+            std::process::exit(0);
         }
-        wayland_glib_interface_init(display_ptr,
-                                    &mut wayland_state as *mut _ as _);
-        ::std::mem::forget(wayland_state);
-        ::std::mem::forget(globals);
-    }
+        awesome_refresh(state);
+    });
+    glib::source::Continue(true)
 }
 
 fn setup_awesome_path(lua: &Lua) -> rlua::Result<()> {

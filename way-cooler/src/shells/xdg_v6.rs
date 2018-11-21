@@ -41,25 +41,28 @@ impl XdgV6ShellHandler for XdgV6 {
                     _: SurfaceHandle,
                     shell_surface: XdgV6ShellSurfaceHandle,
                     _: &MoveEvent) {
-        with_handles!([(compositor: {compositor})] => {
+        dehandle!(
+            @compositor = {compositor};
             let server: &mut ::Server = compositor.into();
             let ref mut seat = server.seat;
             let ref mut cursor = server.cursor;
 
-            if let Some(ref mut view) = seat.focused {
-                let shell: ::Shell = shell_surface.into();
-                let action = &mut seat.action;
-                if view.shell == shell {
-                    with_handles!([(cursor: {cursor})] => {
-                        let (lx, ly) = cursor.coords();
-                        let Origin { x: shell_x, y: shell_y } = view.origin.get();
-                        let (view_sx, view_sy) = (lx - shell_x as f64, ly - shell_y as f64);
-                        let start = Origin::new(view_sx as _, view_sy as _);
-                        *action = Some(::Action::Moving { start: start });
-                    }).unwrap();
-                }
-            }
-        }).unwrap();
+            if seat.focused.is_none() {
+                return
+            };
+            let view = seat.focused.as_mut().unwrap();
+            let shell: ::Shell = shell_surface.into();
+            if view.shell != shell {
+                return
+            };
+            let action = &mut seat.action;
+            @cursor = {cursor};
+            let (lx, ly) = cursor.coords();
+            let Origin { x: shell_x, y: shell_y } = view.origin.get();
+            let (view_sx, view_sy) = (lx - shell_x as f64, ly - shell_y as f64);
+            let start = Origin::new(view_sx as _, view_sy as _);
+            *action = Some(::Action::Moving { start: start })
+        )
     }
 
     fn on_commit(&mut self,

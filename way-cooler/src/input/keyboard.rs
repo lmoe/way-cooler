@@ -1,4 +1,5 @@
-use wlroots::{key_events::KeyEvent, xkbcommon::xkb::{KEY_Escape, KEY_Super_L, KEY_Super_R},
+use wlroots::{key_events::KeyEvent,
+              xkbcommon::xkb::{KEY_Escape, KEY_Super_L, KEY_Super_R},
               Capability, CompositorHandle, KeyboardHandle, KeyboardHandler, WLR_KEY_PRESSED};
 
 pub struct Keyboard;
@@ -42,7 +43,7 @@ impl KeyboardHandler for Keyboard {
             keyboard.get_modifiers()
         );
         // TODO
-        //LUA.with(|lua| {
+        // LUA.with(|lua| {
         //             let lua = lua.borrow();
         //             if let Err(err) = emit_awesome_keybindings(&*lua, event, modifiers) {
         //                 warn!("Could not emit binding for {}: {:?}", event.keycode(), err);

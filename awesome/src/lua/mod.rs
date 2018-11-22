@@ -9,8 +9,7 @@ pub use self::utils::*;
 use glib::MainLoop;
 use rlua::{self, AnyUserData, Lua, Table, Value};
 
-use std::cell::RefCell;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use common::signal;
 
@@ -35,9 +34,8 @@ thread_local! {
 pub fn init_awesome_libraries() {
     info!("Setting up Awesome libraries");
     LUA.with(|lua| {
-        register_libraries(&*lua.borrow())
-            .expect("Could not register lua libraries");
-    });
+           register_libraries(&*lua.borrow()).expect("Could not register lua libraries");
+       });
 }
 
 /// Runs user code from the config through the awesome compatibility layer.
@@ -45,9 +43,9 @@ pub fn init_awesome_libraries() {
 /// It then enters the glib/wayland main loop to listen for events.
 pub fn run_awesome() {
     LUA.with(|lua| {
-        info!("Loading Awesome configuration...");
-        load_config(&mut *lua.borrow_mut());
-    });
+           info!("Loading Awesome configuration...");
+           load_config(&mut *lua.borrow_mut());
+       });
     enter_glib_loop();
 }
 
@@ -61,13 +59,9 @@ fn emit_refresh(lua: &Lua) {
 ///
 /// * Initialise the Lua state
 /// * Run a GMainLoop
-pub fn enter_glib_loop() {
-    MAIN_LOOP.with(|main_loop| main_loop.borrow().run());
-}
+pub fn enter_glib_loop() { MAIN_LOOP.with(|main_loop| main_loop.borrow().run()); }
 
-pub fn terminate() {
-    MAIN_LOOP.with(|main_loop| main_loop.borrow().quit())
-}
+pub fn terminate() { MAIN_LOOP.with(|main_loop| main_loop.borrow().quit()) }
 
 /// Register all the Rust functions for the lua libraries
 pub fn register_libraries(lua: &Lua) -> rlua::Result<()> {
@@ -82,7 +76,8 @@ pub fn register_libraries(lua: &Lua) -> rlua::Result<()> {
 }
 
 fn init_libs(lua: &Lua) -> rlua::Result<()> {
-    use ::{*, objects::*};
+    use objects::*;
+    use *;
     setup_awesome_path(lua)?;
     setup_global_signals(lua)?;
     setup_xcb_connection(lua)?;

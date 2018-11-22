@@ -7,9 +7,7 @@ use wlroots::{CompositorHandle, SurfaceHandler, XWaylandManagerHandler, XWayland
 pub struct XWaylandManager;
 
 impl XWaylandManager {
-    pub fn new() -> Self {
-        XWaylandManager
-    }
+    pub fn new() -> Self { XWaylandManager }
 }
 
 impl XWaylandManagerHandler for XWaylandManager {
@@ -19,7 +17,8 @@ impl XWaylandManagerHandler for XWaylandManager {
     fn new_surface(&mut self,
                    _: CompositorHandle,
                    _: XWaylandSurfaceHandle)
-                   -> (Option<Box<XWaylandSurfaceHandler>>, Option<Box<SurfaceHandler>>) {
+                   -> (Option<Box<XWaylandSurfaceHandler>>, Option<Box<SurfaceHandler>>)
+    {
         (None, None)
     }
 }

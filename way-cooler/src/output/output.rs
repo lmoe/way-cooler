@@ -1,10 +1,9 @@
 use std::rc::Rc;
 
-use wlroots::utils::current_time;
-use wlroots::{project_box, Area, CompositorHandle, Origin, OutputHandle, OutputHandler,
-              OutputLayoutHandle, Renderer, Size, SurfaceHandle};
+use wlroots::{project_box, utils::current_time, Area, CompositorHandle, Origin, OutputHandle,
+              OutputHandler, OutputLayoutHandle, Renderer, Size, SurfaceHandle};
 
-use ::Server;
+use Server;
 
 pub struct Output;
 
@@ -28,7 +27,8 @@ fn render_surface(renderer: &mut Renderer,
                   layout: &mut OutputLayoutHandle,
                   surface: &mut SurfaceHandle,
                   lx: i32,
-                  ly: i32) {
+                  ly: i32)
+{
     with_handles!([(surface: {surface}), (layout: {&mut *layout})] => {
         let (width, height) = surface.current_state().size();
         let (render_width, render_height) =
@@ -57,11 +57,12 @@ fn render_surface(renderer: &mut Renderer,
 /// Render all of the client views.
 fn render_views(renderer: &mut Renderer,
                 layout: &mut OutputLayoutHandle,
-                views: &mut Vec<Rc<::View>>) {
+                views: &mut Vec<Rc<::View>>)
+{
     for view in views.iter_mut().rev() {
         let origin = view.origin.get();
         view.for_each_surface(&mut |surface: SurfaceHandle, sx, sy| {
-            dehandle!(
+                dehandle!(
                 @surface = {surface};
                 @layout = {&*layout};
                 let (width, height) = surface.current_state().size();
@@ -79,11 +80,16 @@ fn render_views(renderer: &mut Renderer,
                                              0.0,
                                              renderer.output
                                              .transform_matrix());
-                    if !renderer.render_texture_with_matrix(surface.texture().as_ref().unwrap(), matrix) {
+                    let rendered = {
+                        let texture = surface.texture().;
+                        let texture = texture.as_ref().unwrap();
+                        renderer.render_texture_with_matrix(texture, matrix)
+                    };
+                    if !rendered {
                       warn!("Could not render a surface");
                     }
                     surface.send_frame_done(current_time());
                 })
-        });
+            });
     }
 }

@@ -11,9 +11,7 @@ pub struct XdgV6 {
 }
 
 impl XdgV6 {
-    pub fn new() -> Self {
-        XdgV6 { ..XdgV6::default() }
-    }
+    pub fn new() -> Self { XdgV6 { ..XdgV6::default() } }
 }
 
 impl XdgV6ShellHandler for XdgV6 {
@@ -21,7 +19,8 @@ impl XdgV6ShellHandler for XdgV6 {
                       compositor: CompositorHandle,
                       _: SurfaceHandle,
                       shell_surface: XdgV6ShellSurfaceHandle,
-                      event: &ResizeEvent) {
+                      event: &ResizeEvent)
+    {
         with_handles!([(compositor: {compositor})] => {
             let server: &mut ::Server = compositor.into();
             let ::Server { ref mut seat,
@@ -40,7 +39,8 @@ impl XdgV6ShellHandler for XdgV6 {
                     compositor: CompositorHandle,
                     _: SurfaceHandle,
                     shell_surface: XdgV6ShellSurfaceHandle,
-                    _: &MoveEvent) {
+                    _: &MoveEvent)
+    {
         dehandle!(
             @compositor = {compositor};
             let server: &mut ::Server = compositor.into();
@@ -68,7 +68,8 @@ impl XdgV6ShellHandler for XdgV6 {
     fn on_commit(&mut self,
                  compositor: CompositorHandle,
                  _: SurfaceHandle,
-                 shell_surface: XdgV6ShellSurfaceHandle) {
+                 shell_surface: XdgV6ShellSurfaceHandle)
+    {
         let configure_serial = {
             with_handles!([(shell_surface: {shell_surface.clone()})] => {
                 shell_surface.configure_serial()
@@ -107,13 +108,14 @@ impl XdgV6ShellHandler for XdgV6 {
     fn map_request(&mut self,
                    compositor: CompositorHandle,
                    _: SurfaceHandle,
-                   shell_surface_handle: XdgV6ShellSurfaceHandle) {
+                   shell_surface_handle: XdgV6ShellSurfaceHandle)
+    {
         let is_toplevel = with_handles!([(shell_surface: {&shell_surface_handle})] => {
-            match shell_surface.state().unwrap() {
-                TopLevel(_) => true,
-                _ => false
-            }
-        }).unwrap();
+                              match shell_surface.state().unwrap() {
+                                  TopLevel(_) => true,
+                                  _ => false
+                              }
+                          }).unwrap();
         dehandle!(
             @compositor = {compositor};
             let server: &mut ::Server = compositor.into();
@@ -135,7 +137,8 @@ impl XdgV6ShellHandler for XdgV6 {
     fn unmap_request(&mut self,
                      compositor: CompositorHandle,
                      _: SurfaceHandle,
-                     shell_surface: XdgV6ShellSurfaceHandle) {
+                     shell_surface: XdgV6ShellSurfaceHandle)
+    {
         dehandle!(
             @compositor = {compositor};
             let server: &mut ::Server = compositor.into();
@@ -157,9 +160,7 @@ impl XdgV6ShellHandler for XdgV6 {
         );
     }
 
-    fn destroyed(&mut self,
-                 compositor: CompositorHandle,
-                 shell_surface: XdgV6ShellSurfaceHandle) {
+    fn destroyed(&mut self, compositor: CompositorHandle, shell_surface: XdgV6ShellSurfaceHandle) {
         let surface = shell_surface.into();
         dehandle!(
             @compositor = {compositor};
@@ -178,7 +179,8 @@ impl XdgV6ShellManagerHandler for XdgV6ShellManager {
     fn new_surface(&mut self,
                    _: CompositorHandle,
                    _: XdgV6ShellSurfaceHandle)
-                   -> (Option<Box<XdgV6ShellHandler>>, Option<Box<SurfaceHandler>>) {
+                   -> (Option<Box<XdgV6ShellHandler>>, Option<Box<SurfaceHandler>>)
+    {
         (Some(Box::new(::XdgV6::new())), None)
     }
 }

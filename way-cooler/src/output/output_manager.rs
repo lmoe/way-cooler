@@ -3,16 +3,15 @@ use wlroots::{CompositorHandle, OutputBuilder, OutputBuilderResult, OutputManage
 pub struct OutputManager;
 
 impl OutputManager {
-    pub fn new() -> Self {
-        OutputManager
-    }
+    pub fn new() -> Self { OutputManager }
 }
 
 impl OutputManagerHandler for OutputManager {
     fn output_added<'output>(&mut self,
                              compositor: CompositorHandle,
                              builder: OutputBuilder<'output>)
-                             -> Option<OutputBuilderResult<'output>> {
+                             -> Option<OutputBuilderResult<'output>>
+    {
         dehandle!(
             @compositor = {compositor};
             let server: &mut ::Server = compositor.into();

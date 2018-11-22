@@ -4,16 +4,15 @@ use wlroots::{Capability, CompositorHandle, InputManagerHandler, KeyboardHandle,
 pub struct InputManager;
 
 impl InputManager {
-    pub fn new() -> Self {
-        InputManager
-    }
+    pub fn new() -> Self { InputManager }
 }
 
 impl InputManagerHandler for InputManager {
     fn keyboard_added(&mut self,
                       compositor: CompositorHandle,
                       keyboard: KeyboardHandle)
-                      -> Option<Box<KeyboardHandler>> {
+                      -> Option<Box<KeyboardHandler>>
+    {
         dehandle!(
             @compositor = {compositor};
             @keyboard = {keyboard};
@@ -31,7 +30,8 @@ impl InputManagerHandler for InputManager {
     fn pointer_added(&mut self,
                      compositor: CompositorHandle,
                      pointer: PointerHandle)
-                     -> Option<Box<PointerHandler>> {
+                     -> Option<Box<PointerHandler>>
+    {
         dehandle!(
             @compositor = {compositor};
             @pointer = {pointer};

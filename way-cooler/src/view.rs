@@ -1,6 +1,5 @@
 use std::cell::Cell;
-use wlroots::{XdgShellState, XdgV6ShellState};
-use wlroots::{Area, Origin, Size, SurfaceHandle};
+use wlroots::{Area, Origin, Size, SurfaceHandle, XdgShellState, XdgV6ShellState};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PendingMoveResize {
@@ -19,14 +18,10 @@ pub struct View {
 
 impl View {
     pub fn new(shell: ::Shell) -> View {
-        View { shell: shell,
-               origin: Cell::new(Origin::default()),
-               pending_move_resize: Cell::new(None) }
+        View { shell, origin: Cell::new(Origin::default()), pending_move_resize: Cell::new(None) }
     }
 
-    pub fn surface(&self) -> SurfaceHandle {
-        self.shell.surface()
-    }
+    pub fn surface(&self) -> SurfaceHandle { self.shell.surface() }
 
     pub fn activate(&self, activate: bool) {
         match self.shell.clone() {
@@ -40,7 +35,7 @@ impl View {
                         _ => unimplemented!()
                     }
                 );
-            },
+            }
             ::Shell::Xdg(xdg_surface) => {
                 dehandle! (
                     @xdg_surface = {xdg_surface};
@@ -62,24 +57,20 @@ impl View {
                     let Area { origin: _, size } = xdg_surface.geometry();
                     size
                 }).unwrap()
-            },
-            ::Shell::Xdg(xdg_surface) => {
-                with_handles!([(xdg_surface: {xdg_surface})] => {
-                    let Area { origin: _, size } = xdg_surface.geometry();
-                    size
-                }).unwrap()
             }
+            ::Shell::Xdg(xdg_surface) => with_handles!([(xdg_surface: {xdg_surface})] => {
+                                             let Area { origin: _, size } = xdg_surface.geometry();
+                                             size
+                                         }).unwrap()
         }
     }
 
     pub fn move_resize(&self, area: Area) {
-        let Area { origin: Origin { x, y },
-                   size: Size { width, height } } = area;
+        let Area { origin: Origin { x, y }, size: Size { width, height } } = area;
         let width = width as u32;
         let height = height as u32;
 
-        let Origin { x: view_x,
-                     y: view_y } = self.origin.get();
+        let Origin { x: view_x, y: view_y } = self.origin.get();
 
         let update_x = x != view_x;
         let update_y = y != view_y;
@@ -96,7 +87,7 @@ impl View {
                         _ => unimplemented!()
                     }
                 }).unwrap();
-            },
+            }
             ::Shell::Xdg(xdg_surface) => {
                 with_handles!([(xdg_surface: {xdg_surface})] => {
                     match xdg_surface.state() {
@@ -114,10 +105,8 @@ impl View {
             // size didn't change
             self.origin.set(Origin { x, y });
         } else {
-            self.pending_move_resize.set(Some(PendingMoveResize { update_x,
-                                              update_y,
-                                              area,
-                                              serial }));
+            self.pending_move_resize
+                .set(Some(PendingMoveResize { update_x, update_y, area, serial }));
         }
     }
 
@@ -127,7 +116,7 @@ impl View {
                 with_handles!([(xdg_v6_surface: {xdg_v6_surface})] => {
                     xdg_v6_surface.for_each_surface(f);
                 }).unwrap();
-            },
+            }
             ::Shell::Xdg(xdg_surface) => {
                 with_handles!([(xdg_surface: {xdg_surface})] => {
                     xdg_surface.for_each_surface(f);

@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
-use wlroots::{CompositorHandle, Origin, SurfaceHandle, SurfaceHandler,
-              XdgShellSurfaceHandle, XdgShellHandler, XdgShellManagerHandler};
-use wlroots::xdg_shell_events::{MoveEvent, ResizeEvent};
+use wlroots::{xdg_shell_events::{MoveEvent, ResizeEvent},
+              CompositorHandle, Origin, SurfaceHandle, SurfaceHandler, XdgShellHandler,
+              XdgShellManagerHandler, XdgShellSurfaceHandle};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Xdg {
@@ -10,9 +10,7 @@ pub struct Xdg {
 }
 
 impl Xdg {
-    pub fn new() -> Self {
-        Xdg { .. Xdg::default()}
-    }
+    pub fn new() -> Self { Xdg { ..Xdg::default() } }
 }
 
 impl XdgShellHandler for Xdg {
@@ -20,7 +18,8 @@ impl XdgShellHandler for Xdg {
                       compositor: CompositorHandle,
                       _: SurfaceHandle,
                       shell_surface: XdgShellSurfaceHandle,
-                      event: &ResizeEvent) {
+                      event: &ResizeEvent)
+    {
         with_handles!([(compositor: {compositor})] => {
             let server: &mut ::Server = compositor.into();
             let ::Server { ref mut seat,
@@ -39,7 +38,8 @@ impl XdgShellHandler for Xdg {
                     compositor: CompositorHandle,
                     _: SurfaceHandle,
                     shell_surface: XdgShellSurfaceHandle,
-                    _: &MoveEvent) {
+                    _: &MoveEvent)
+    {
         with_handles!([(compositor: {compositor})] => {
             let server: &mut ::Server = compositor.into();
             let ref mut seat = server.seat;
@@ -64,7 +64,8 @@ impl XdgShellHandler for Xdg {
     fn on_commit(&mut self,
                  compositor: CompositorHandle,
                  _: SurfaceHandle,
-                 shell_surface: XdgShellSurfaceHandle) {
+                 shell_surface: XdgShellSurfaceHandle)
+    {
         let configure_serial = {
             with_handles!([(shell_surface: {shell_surface.clone()})] => {
                 shell_surface.configure_serial()
@@ -100,9 +101,7 @@ impl XdgShellHandler for Xdg {
         }).unwrap();
     }
 
-    fn destroyed(&mut self,
-                 compositor: CompositorHandle,
-                 shell_surface: XdgShellSurfaceHandle) {
+    fn destroyed(&mut self, compositor: CompositorHandle, shell_surface: XdgShellSurfaceHandle) {
         let surface = shell_surface.into();
         dehandle!(
             @compositor = {compositor};
@@ -121,7 +120,8 @@ impl XdgShellManagerHandler for XdgShellManager {
     fn new_surface(&mut self,
                    compositor: CompositorHandle,
                    xdg_surface: XdgShellSurfaceHandle)
-                   -> (Option<Box<XdgShellHandler>>, Option<Box<SurfaceHandler>>) {
+                   -> (Option<Box<XdgShellHandler>>, Option<Box<SurfaceHandler>>)
+    {
         dehandle!(
             @compositor = {compositor};
             let server: &mut ::Server = compositor.into();

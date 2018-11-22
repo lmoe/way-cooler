@@ -1,11 +1,9 @@
-use std::collections::HashSet;
-use std::rc::Rc;
-use std::time::Duration;
-use wlroots;
-use wlroots::events::seat_events::SetCursorEvent;
-use wlroots::pointer_events::ButtonEvent;
-use wlroots::utils::{current_time, Edges};
-use wlroots::{Area, CompositorHandle, Cursor, CursorHandle, DragIconHandle, Origin, SeatHandle,
+use std::{collections::HashSet, rc::Rc, time::Duration};
+use wlroots::{self,
+              events::seat_events::SetCursorEvent,
+              pointer_events::ButtonEvent,
+              utils::{current_time, Edges},
+              Area, CompositorHandle, Cursor, CursorHandle, DragIconHandle, Origin, SeatHandle,
               SeatHandler, Size, SurfaceHandle, SurfaceHandler, XCursorManager};
 
 #[derive(Debug, Default)]
@@ -16,7 +14,9 @@ pub enum Action {
     /// We are moving a view.
     ///
     /// The start is the surface level coordinates of where the first click was
-    Moving { start: Origin },
+    Moving {
+        start: Origin
+    },
     Resizing {
         start: Origin,
         offset: Origin,
@@ -41,11 +41,7 @@ pub struct Seat {
 }
 
 impl Seat {
-    pub fn new(seat: SeatHandle) -> Seat {
-        Seat { seat,
-               meta: false,
-               ..Seat::default() }
-    }
+    pub fn new(seat: SeatHandle) -> Seat { Seat { seat, meta: false, ..Seat::default() } }
 
     pub fn clear_focus(&mut self) {
         if let Some(focused_view) = self.focused.take() {
@@ -91,10 +87,8 @@ impl Seat {
     }
 
     pub fn move_view<O>(&mut self, cursor: &mut Cursor, view: &::View, start: O)
-        where O: Into<Option<Origin>>
-    {
-        let Origin { x: shell_x,
-                     y: shell_y } = view.origin.get();
+        where O: Into<Option<Origin>> {
+        let Origin { x: shell_x, y: shell_y } = view.origin.get();
         let (lx, ly) = cursor.coords();
         match start.into() {
             None => {
@@ -113,7 +107,8 @@ impl Seat {
                         cursor: &mut CursorHandle,
                         view: Rc<::View>,
                         views: &mut Vec<Rc<::View>>,
-                        edges: Edges) {
+                        edges: Edges)
+    {
         self.focus_view(view.clone(), views);
         with_handles!([(cursor: {cursor})] => {
             let Origin { x: view_x, y: view_y } = view.origin.get();
@@ -131,7 +126,8 @@ impl Seat {
 
     pub fn view_at_pointer(views: &mut [Rc<::View>],
                            cursor: &mut Cursor)
-                           -> (Option<Rc<::View>>, Option<SurfaceHandle>, f64, f64) {
+                           -> (Option<Rc<::View>>, Option<SurfaceHandle>, f64, f64)
+    {
         for view in views {
             match view.shell.clone() {
                 ::Shell::XdgV6(mut shell) => {
@@ -146,7 +142,7 @@ impl Seat {
                     if surface.is_some() {
                         return (Some(view.clone()), surface, sx, sy)
                     }
-                },
+                }
                 ::Shell::Xdg(mut shell) => {
                     let (mut sx, mut sy) = (0.0, 0.0);
                     let surface = dehandle!(
@@ -169,7 +165,8 @@ impl Seat {
                                   cursor: &mut Cursor,
                                   xcursor_manager: &mut XCursorManager,
                                   views: &mut [Rc<::View>],
-                                  time_msec: Option<u32>) {
+                                  time_msec: Option<u32>)
+    {
         let time = if let Some(time_msec) = time_msec {
             Duration::from_millis(time_msec as u64)
         } else {
@@ -179,44 +176,41 @@ impl Seat {
         match self.action {
             Some(Action::Moving { start }) => {
                 self.focused = self.focused.take().map(|f| {
-                                                           self.move_view(cursor, &f, start);
-                                                           f
-                                                       });
+                                                      self.move_view(cursor, &f, start);
+                                                      f
+                                                  });
             }
-            Some(Action::Resizing { offset,
-                                    start,
-                                    original_size,
-                                    edges }) => {
-                self.focused = self.focused.take().map(|view| {
-                    let (cursor_lx, cursor_ly) = cursor.coords();
-                    let Origin { x: offs_x,
-                                 y: offs_y } = offset;
-                    let Origin { x: mut view_x,
-                                 y: mut view_y } = start;
-                    let (dx, dy) = (cursor_lx as i32 - offs_x - view_x,
-                                    cursor_ly as i32 - offs_y - view_y);
-                    let Size { mut width,
-                               mut height } = original_size;
+            Some(Action::Resizing { offset, start, original_size, edges }) => {
+                self.focused =
+                    self.focused.take().map(|view| {
+                                           let (cursor_lx, cursor_ly) = cursor.coords();
+                                           let Origin { x: offs_x, y: offs_y } = offset;
+                                           let Origin { x: mut view_x, y: mut view_y } = start;
+                                           let (dx, dy) = (cursor_lx as i32 - offs_x - view_x,
+                                                           cursor_ly as i32 - offs_y - view_y);
+                                           let Size { mut width, mut height } = original_size;
 
-                    if edges.contains(Edges::WLR_EDGE_BOTTOM) {
-                        height += dy;
-                    } else if edges.contains(Edges::WLR_EDGE_TOP) {
-                        view_y += dy;
-                        height -= dy;
-                    }
+                                           if edges.contains(Edges::WLR_EDGE_BOTTOM) {
+                                               height += dy;
+                                           } else if edges.contains(Edges::WLR_EDGE_TOP) {
+                                               view_y += dy;
+                                               height -= dy;
+                                           }
 
-                    if edges.contains(Edges::WLR_EDGE_LEFT) {
-                        view_x += dx;
-                        width -= dx;
-                    } else if edges.contains(Edges::WLR_EDGE_RIGHT) {
-                        width += dx;
-                    }
+                                           if edges.contains(Edges::WLR_EDGE_LEFT) {
+                                               view_x += dx;
+                                               width -= dx;
+                                           } else if edges.contains(Edges::WLR_EDGE_RIGHT) {
+                                               width += dx;
+                                           }
 
-                    view.move_resize(Area { origin: Origin { x: view_x,
-                                                             y: view_y },
-                                            size: Size { width, height } });
-                    view
-                });
+                                           view.move_resize(Area { origin: Origin { x:
+                                                                                        view_x,
+                                                                                    y:
+                                                                                        view_y },
+                                                                   size: Size { width, height } });
+                                           view
+                                       });
             }
             _ => {
                 let (_view, surface, sx, sy) = Seat::view_at_pointer(views, cursor);
@@ -287,7 +281,8 @@ impl SeatHandler for SeatManager {
                      compositor: CompositorHandle,
                      _: SeatHandle,
                      drag_icon: DragIconHandle)
-                     -> (Option<Box<wlroots::DragIconHandler>>, Option<Box<SurfaceHandler>>) {
+                     -> (Option<Box<wlroots::DragIconHandler>>, Option<Box<SurfaceHandler>>)
+    {
         with_handles!([(compositor: {compositor})] => {
             let server: &mut ::Server = compositor.into();
             let ::Server { ref mut seat, .. } = *server;
@@ -298,7 +293,5 @@ impl SeatHandler for SeatManager {
 }
 
 impl SeatManager {
-    pub fn new() -> Self {
-        SeatManager::default()
-    }
+    pub fn new() -> Self { SeatManager::default() }
 }
